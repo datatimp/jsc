@@ -289,7 +289,7 @@ h1 {
     border-radius: 50%;
     background: linear-gradient(90deg, #b8860b 0%, #b8860b 35%, #fff8c0 50%, #b8860b 65%, #b8860b 100%);
     background-size: 300% 100%;
-    animation: gold-sweep 5.5s linear infinite;
+    animation: gold-sweep 3.5s linear infinite;
     z-index: -1;
 }
 
