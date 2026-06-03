@@ -99,10 +99,6 @@ h1 {
     transition: transform 0.5s ease;
 }
 
-.btn:hover .btn-icon {
-    transform: rotate(180deg);
-}
-
 /* Results Section */
 .results {
     display: grid;
@@ -267,14 +263,40 @@ h1 {
 }
 
 .links-container .member-avatar {
-    transition: transform 0.2s ease;
-    transform-origin: left center;
     cursor: pointer;
 }
 
-.links-container .member-avatar:hover {
+.avatar-ring {
+    position: relative;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transform-origin: left center;
+    transition: transform 0.2s ease;
+    cursor: pointer;
+}
+
+.avatar-ring:hover {
     transform: scale(2.5);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.avatar-ring:hover::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 50%;
+    background: linear-gradient(90deg, #b8860b 0%, #b8860b 35%, #fff8c0 50%, #b8860b 65%, #b8860b 100%);
+    background-size: 300% 100%;
+    animation: gold-sweep 5.5s linear infinite;
+    z-index: -1;
+}
+
+@keyframes gold-sweep {
+    0%        { background-position: 0% center; }
+    15%       { background-position: 100% center; }
+    15.001%   { background-position: 0% center; }
+    100%      { background-position: 0% center; }
 }
 
 .links-container a {

@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const generateBtn = document.getElementById('generate-btn');
     const resultsContainer = document.getElementById('results-container');
+    let iconRotation = 0;
 
     const members = [
         'Joanna',
@@ -54,8 +55,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Create a flex container for avatar and name
                     nameTd.innerHTML = `
                         <div style="display: flex; align-items: center; gap: 0.75rem;">
-                            <div class="member-avatar" style="width: 2rem; height: 2rem; font-size: 0.75rem;">
-                                ${getAvatar(name)}
+                            <div class="avatar-ring">
+                                <div class="member-avatar" style="width: 2rem; height: 2rem; font-size: 0.75rem;">
+                                    ${getAvatar(name)}
+                                </div>
                             </div>
                             <span>${name}</span>
                         </div>
@@ -141,7 +144,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     generateBtn.addEventListener('click', () => {
         const icon = generateBtn.querySelector('.btn-icon');
-        icon.style.transform = `rotate(${Math.random() * 360 + 360}deg)`;
+        iconRotation += 180;
+        icon.style.transform = `rotate(${iconRotation}deg)`;
         
         const shuffled = shuffleArray(members);
         const groups = createGroups(shuffled);
