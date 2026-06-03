@@ -31,7 +31,7 @@ body {
 /* Main Container Layout */
 .container {
     width: 100%;
-    max-width: 800px;
+    max-width: 850px;
     padding: 2rem;
     display: flex;
     flex-direction: column;
