@@ -1,36 +1,68 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const generateBtn = document.getElementById('generate-btn');
     const resultsContainer = document.getElementById('results-container');
     let iconRotation = 0;
 
-    const members = [
-        'Joanna',
-        'Melo',
-        'Rithika',
-        'Katherine',
-        'Tim',
-        'Will',
-        'Shreya'
-    ];
+    // --- Data loading ---
 
-    const memberImages = {
-        'Joanna': 'joanna.jpg',
-        'Melo': 'melo.jpg',
-        'Rithika': 'rithika.png',
-        'Katherine': 'katherine.jpg',
-        'Tim': 'tim.png',
-        'Will': 'will.jpg',
-        'Shreya': 'shreya.jpg'
-    };
+    async function fetchText(path) {
+        const response = await fetch(path);
+        if (!response.ok) throw new Error(`Failed to load ${path}`);
+        return response.text();
+    }
+
+    function parseMembers(text) {
+        return text.split('\n')
+            .map(line => line.replace(/^[-*+]\s+/, '').trim())
+            .filter(line => line && !line.startsWith('#'));
+    }
+
+    function parseLinks(text) {
+        const entries = [];
+        for (const block of text.trim().split(/\n{2,}/)) {
+            const entry = {};
+            for (const line of block.split('\n')) {
+                const match = line.match(/^(\w+):\s*(.*)/);
+                if (match) entry[match[1]] = match[2].trim();
+            }
+            if (entry.Name) entries.push(entry);
+        }
+        return entries;
+    }
+
+    // --- Rendering helpers ---
+
+    function getAvatarHTML(name, size = '') {
+        const lower = name.toLowerCase();
+        const initial = name.charAt(0).toUpperCase();
+        const sizeStyle = size ? `style="${size}"` : '';
+        return `<img src="assets/images/${lower}.jpg" ${sizeStyle}
+                     onerror="this.onerror=null;this.src='assets/images/${lower}.png';this.onerror=function(){this.style.display='none';this.parentElement.textContent='${initial}';};"
+                     alt="${name}">`;
+    }
+
+    function renderInlineMarkdown(text) {
+        return text.replace(/\[([^\]]+)\]\(([^)]+)\)/g,
+            '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    }
+
+    // --- Roster chips ---
+
+    let members = [];
+    try {
+        members = parseMembers(await fetchText('assets/docs/members.md'));
+    } catch (e) {
+        console.error('Could not load members.md:', e);
+    }
 
     const activeMembers = new Set(members);
-
     const rosterContainer = document.getElementById('roster-container');
+
     [...members].sort().forEach(name => {
         const chip = document.createElement('div');
         chip.className = 'roster-chip';
         chip.innerHTML = `
-            <div class="roster-avatar">${getAvatar(name)}</div>
+            <div class="roster-avatar">${getAvatarHTML(name)}</div>
             <span>${name}</span>
         `;
         chip.addEventListener('click', () => {
@@ -45,121 +77,107 @@ document.addEventListener('DOMContentLoaded', () => {
         rosterContainer.appendChild(chip);
     });
 
-    // Fetch and render the links markdown
+    // --- Links table ---
+
     const linksContainer = document.getElementById('links-container');
-    fetch('assets/docs/links.md')
-        .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.text();
-        })
-        .then(text => {
-            // marked is available globally from CDN
-            linksContainer.innerHTML = marked.parse(text);
+    try {
+        const entries = parseLinks(await fetchText('assets/docs/links.md'));
+        entries.sort((a, b) => a.Name.localeCompare(b.Name));
 
-            // Post-process table to sort alphabetically and add avatars
-            const tbody = linksContainer.querySelector('tbody');
-            if (tbody) {
-                const rows = Array.from(tbody.querySelectorAll('tr'));
-                
-                // Sort alphabetically by the first column (Name)
-                rows.sort((a, b) => {
-                    const nameA = a.querySelector('td:first-child').textContent.trim();
-                    const nameB = b.querySelector('td:first-child').textContent.trim();
-                    return nameA.localeCompare(nameB);
-                });
-                
-                // Re-append sorted rows and add the avatar
-                tbody.innerHTML = '';
-                rows.forEach(row => {
-                    const nameTd = row.querySelector('td:first-child');
-                    const name = nameTd.textContent.trim();
-                    
-                    // Create a flex container for avatar and name
-                    nameTd.innerHTML = `
-                        <div style="display: flex; align-items: center; gap: 0.75rem;">
-                            <div class="avatar-ring">
-                                <div class="member-avatar" style="width: 2rem; height: 2rem; font-size: 0.75rem;">
-                                    ${getAvatar(name)}
-                                </div>
-                            </div>
-                            <span>${name}</span>
-                        </div>
-                    `;
-                    tbody.appendChild(row);
-                });
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching links markdown:', error);
-            linksContainer.innerHTML = '<p class="empty-state" style="padding: 1rem;">Could not load links.</p>';
+        const columns = ['LinkedIn', 'Website', 'Github', 'Other'];
+        const table = document.createElement('table');
+
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+        ['Name', ...columns].forEach(col => {
+            const th = document.createElement('th');
+            th.textContent = col;
+            headerRow.appendChild(th);
         });
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
 
-    // Fisher-Yates shuffle
-    function shuffleArray(array) {
-        const newArray = [...array];
-        for (let i = newArray.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
-        }
-        return newArray;
+        const tbody = document.createElement('tbody');
+        entries.forEach(entry => {
+            const tr = document.createElement('tr');
+
+            const nameTd = document.createElement('td');
+            nameTd.innerHTML = `
+                <div style="display:flex;align-items:center;gap:0.75rem;">
+                    <div class="avatar-ring">
+                        <div class="member-avatar" style="width:2rem;height:2rem;font-size:0.75rem;">
+                            ${getAvatarHTML(entry.Name, 'width:100%;height:100%;object-fit:cover;')}
+                        </div>
+                    </div>
+                    <span>${entry.Name}</span>
+                </div>`;
+            tr.appendChild(nameTd);
+
+            columns.forEach(col => {
+                const td = document.createElement('td');
+                const value = entry[col] || '';
+                td.innerHTML = value ? renderInlineMarkdown(value) : '—';
+                tr.appendChild(td);
+            });
+
+            tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        linksContainer.appendChild(table);
+    } catch (e) {
+        console.error('Could not load links.md:', e);
+        linksContainer.innerHTML = '<p class="empty-state" style="padding:1rem;">Could not load links.</p>';
     }
 
-    function createGroups(shuffledMembers) {
+    // --- Pair generation ---
+
+    function shuffleArray(array) {
+        const arr = [...array];
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    function createGroups(shuffled) {
         const groups = [];
         let i = 0;
-        
-        while (i < shuffledMembers.length) {
-            // Group of 3 at the end if necessary
-            if (shuffledMembers.length - i === 3) {
-                groups.push([shuffledMembers[i], shuffledMembers[i+1], shuffledMembers[i+2]]);
+        while (i < shuffled.length) {
+            if (shuffled.length - i === 3) {
+                groups.push([shuffled[i], shuffled[i + 1], shuffled[i + 2]]);
                 break;
             }
-            // Group of 2
-            groups.push([shuffledMembers[i], shuffledMembers[i+1]]);
+            groups.push([shuffled[i], shuffled[i + 1]]);
             i += 2;
         }
-        
         return groups;
-    }
-
-    function getAvatar(name) {
-        const imageFile = memberImages[name];
-        if (imageFile) {
-            return `<img src="assets/images/${imageFile}" alt="${name}">`;
-        }
-        return name.charAt(0).toUpperCase();
     }
 
     function renderGroups(groups) {
         resultsContainer.innerHTML = '';
-        
         groups.forEach((group, index) => {
             const card = document.createElement('div');
             card.className = 'group-card';
             card.style.animationDelay = `${index * 0.1}s`;
-            
-            const header = document.createElement('div');
-            header.className = 'group-header';
-            header.innerHTML = `
-                <h2 class="group-title">Group ${index + 1}</h2>
-                <span class="group-badge">${group.length} Members</span>
-            `;
-            
-            const memberList = document.createElement('div');
-            memberList.className = 'member-list';
-            
+
+            card.innerHTML = `
+                <div class="group-header">
+                    <h2 class="group-title">Group ${index + 1}</h2>
+                    <span class="group-badge">${group.length} Members</span>
+                </div>
+                <div class="member-list"></div>`;
+
+            const memberList = card.querySelector('.member-list');
             group.forEach(member => {
                 const memberDiv = document.createElement('div');
                 memberDiv.className = 'member';
                 memberDiv.innerHTML = `
-                    <div class="member-avatar">${getAvatar(member)}</div>
-                    <span class="member-name">${member}</span>
-                `;
+                    <div class="member-avatar">${getAvatarHTML(member)}</div>
+                    <span class="member-name">${member}</span>`;
                 memberList.appendChild(memberDiv);
             });
-            
-            card.appendChild(header);
-            card.appendChild(memberList);
+
             resultsContainer.appendChild(card);
         });
     }
@@ -168,9 +186,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const icon = generateBtn.querySelector('.btn-icon');
         iconRotation += 180;
         icon.style.transform = `rotate(${iconRotation}deg)`;
-        
-        const shuffled = shuffleArray([...activeMembers]);
-        const groups = createGroups(shuffled);
-        renderGroups(groups);
+        renderGroups(createGroups(shuffleArray([...activeMembers])));
     });
 });

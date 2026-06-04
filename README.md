@@ -2,14 +2,19 @@
 
 > Never Search Alone
 
-A lightweight browser tool for randomly pairing JSC members for search sessions. Hit the button, get your pairs — no setup required.
+A lightweight browser tool for randomly pairing JSC members for sessions. Click the chips above the button to select or deselect a member. Hit the button, get your pairs — no setup required. 
 
 ## What it does
 
-- Randomly shuffles all 7 members and assigns them into pairs
+- Randomly shuffles group  members and assigns them into pairs
 - Handles the odd-one-out by forming a group of 3 when needed
 - Displays each member's photo alongside their name
 - Loads a shared links reference table from a Markdown file
+
+## Instructions
+
+1. Clone this repo
+2. Change the member names in 
 
 ## Project structure
 
@@ -23,16 +28,6 @@ jsc/
     └── docs/
         └── links.md    # Shared links table (Markdown)
 ```
-
-## Running it
-
-Open `index.html` directly in a browser, or serve it with any static file server:
-
-```bash
-npx serve .
-```
-
-> The links section requires a server (due to `fetch`). Opening as a local file will skip it gracefully.
 
 ## Adding or updating members
 
