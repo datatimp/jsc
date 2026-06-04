@@ -23,6 +23,28 @@ document.addEventListener('DOMContentLoaded', () => {
         'Shreya': 'shreya.jpg'
     };
 
+    const activeMembers = new Set(members);
+
+    const rosterContainer = document.getElementById('roster-container');
+    [...members].sort().forEach(name => {
+        const chip = document.createElement('div');
+        chip.className = 'roster-chip';
+        chip.innerHTML = `
+            <div class="roster-avatar">${getAvatar(name)}</div>
+            <span>${name}</span>
+        `;
+        chip.addEventListener('click', () => {
+            if (activeMembers.has(name)) {
+                activeMembers.delete(name);
+                chip.classList.add('inactive');
+            } else {
+                activeMembers.add(name);
+                chip.classList.remove('inactive');
+            }
+        });
+        rosterContainer.appendChild(chip);
+    });
+
     // Fetch and render the links markdown
     const linksContainer = document.getElementById('links-container');
     fetch('assets/docs/links.md')
@@ -147,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
         iconRotation += 180;
         icon.style.transform = `rotate(${iconRotation}deg)`;
         
-        const shuffled = shuffleArray(members);
+        const shuffled = shuffleArray([...activeMembers]);
         const groups = createGroups(shuffled);
         renderGroups(groups);
     });
